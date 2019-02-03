@@ -1,122 +1,64 @@
 # CIS 566 Homework 1: Noisy Terrain
 
-## Objective
-- Continue practicing WebGL and Typescript
-- Experiment with noise functions to procedurally generate the surface of a planet
+- Author: Dian Chen 
+- Pennkey: dianchen
 
-## Base Code
-The code we have provided for this assignment features the following:
-- A subdivided plane rendered with a shader that deforms it with a sine curve
-and applies a blue distance fog to it to blend it into the background. This
-shader also provides a few noise functions that include "seed" input; this
-value lets you offset the input vec2 by some constant value so that you can
-get two different noise values for the same input position.
-- A movable camera like the one provided with homework 0
-- A keyboard input listener that, at present, listens for the WASD keys
-and updates a `vec2` in the plane shader representing a 2D position
-- A square that spans the range [-1, 1] in X and Y that is rendered with a
-shader that does not apply a projection matrix to it, thus rendering it as the
-"background" of your scene
+## Showcases
+### Cellular Mountain Range
+![](figures/mountain1.png)
 
-When you run the program, you should see this scene:
-![](startScene.png)
+Combined Worley noise with Perlin noise in the FBM to produce mountaineous surfaces, while maintianing an overall cellular structure. The linkings among major mountains forms mountain ranges.
 
-## Assignment Requirements
-- __(75 points)__ Modify the provided terrain shader so that it incorporates various noise
-functions and noise function permutations to deform the surface and
-modify the color of the subdivided plane to give it the appearance of
-various geographic features. Your terrain should incorporate at least three
-different types of noise (different permutations count as different types).
-Here are some suggestions for how to use noise to generate these features:
-  - Create a height field based on summed fractal noise
-  - Adjust the distribution of noise values so they are biased to various height
-  values, or even radically remap height values entirely!
-  ![](distributionGraphs.png)
-  - Use noise functions on a broad scale to compute different terrain attributes:
-    - Temperature
-    - Moisture
-    - Rainfall
-    - Population
-    - Mysticality
-    - Volcanic activity
-    - Urbanization
-    - Storm intensity
-    - Fog density (perhaps add some procedurally textured planes hovering above
-      the ground)
-    - Faction control in the war between the Ponies of Equestria and Manatees
-    of Atlantis
-  - Use the above attributes to drive visual features such as terrain height
-  distribution, terrain color, water placement, noise type used to deform
-  terrain, etc.
-  - If you think of your terrain attributes as forming an N-dimensional space,
-  you can carve out zones within that space for different kinds of environments
-  and biomes, interpolating between the different kinds when you reach the
-  boundary of a biome.
-  - Your terrain doesn't have to be Earth-like; create any kind of outlandish
-  environment you wish to!
+### Circular Ridges
+![](figures/mountain2.png) 
 
+Used recursive FBM to produce wierd ridges. Adjusting the "layer of dreams" can produce even dreamy patterns.
 
-- __(15 points)__ Add GUI elements via dat.GUI that allow the user to modify different
-attributes of your terrain generator. For example, you could modify the scale
-of certain noise functions to grow and shrink biome placement, or adjust the
-age of your world to alter things like sea level and mountain height. You could
-also modify the time of day of your scene through the GUI. Whichever elements
-you choose to make controllable, you should have at least two modifiable
-features.
+### Sharp Peaks
+![](figures/mountain3.png)
 
+Usual lattice-based noise with FBM.
 
-- __(10 points)__ Following the specifications listed
-[here](https://github.com/pjcozzi/Articles/blob/master/CIS565/GitHubRepo/README.md),
-create your own README.md, renaming this file to INSTRUCTIONS.md. Don't worry
-about discussing runtime optimization for this project. Make sure your
-README contains the following information:
-  - Your name and PennKey
-  - Citation of any external resources you found helpful when implementing this
-  assignment.
-  - A link to your live github.io demo (refer to the pinned Piazza post on
-    how to make a live demo through github.io)
-  - An explanation of the techniques you used to generate your planet features.
-  Please be as detailed as you can; not only will this help you explain your work
-  to recruiters, but it helps us understand your project when we grade it!
+## Details
+### Shaders
+In the vertex shaders you can find noise implementations used at several level:
 
-## Inspiration
-### Cliffs
-![](img/cliff.jpg)
+- Level 1: Basic noise that returns pseudo-random values at any certain point
+- Level 2: Perlin noise, Spatial noise and Worley noise that make use of noise values at lattice points and then calculate using interpolation
+- Level 3: Different permutations of the Level 2 noises
+- Level 4: Fractal Brownian Motion (FBM) functions that compound Level 2 or Level 3 noises, with various permutation or combination
+- Level 5: Recursive FBMs that "dreams" using different Level 4 noise
 
-[(Image Source)](https://i.pinimg.com/236x/a6/91/7c/a6917cbe80e81736058cdcfe60e90447.jpg)
+The interpolation, falloff and other helper functions are implemented as well. I chose to not include every single noise functions in the 3 showcase terrains, but used the ones with better visual results. You can off course manually modify the shaders to wake up the other noise!
 
-### Stairs
-![](img/stairs.jpg) 
+### GUI parameters
+The parameters that control the nature of the terrains are readily accesible in the GUI, which include:
 
-Use a sawtooth / stepping function to create stairs. [(Image Source)](https://i.pinimg.com/originals/43/ba/5c/43ba5caaeed0f24b19bbbc16f884966c.jpg)
+- FBM parameters (frequence, lancunarity, amplitude, gain and octaves)
+- Coefficients of a polynomial function that further modifies the noise (exponent, multiply)
+- Cell size for Worley noise, if using "mountain1"
+- Number of layers of "dream" for recursive FBM, if using "mountain2"
+- Switching among different terrains as in Showcases, by switching shaders
 
-### Pond
-![](img/pond.png)
+## External Resources
 
-Use any obj loader to load assets into your scenes. Be sure to credit the loader in your readme! [(Image Source)](https://i.pinimg.com/originals/13/2a/2a/132a2a2bde126d0993b9ea77955cc673.jpg)
+- [IQ's Blog on Noise](http://iquilezles.org/www/)
+- [FBM Chapter from The Book of Shaders](https://thebookofshaders.com/13/)
+- [Perlin Noise Tutorial on ScratchAPixel](https://www.scratchapixel.com/lessons/procedural-generation-virtual-worlds/perlin-noise-part-2)
+
+## Live Demo
+
+[Live Demo](index.html)
+
+## TODO List
+
+- Add procedurally controlled biomes; further exploit the fragment shader
+- Add sky elements (nebula, stars, etc.) on the background
+- Add time to produce dynamic scenes
+- Add interactive modification of the terrain using mouse and keyboard
+- Come up with more creative usage of noise
+- Clean up and structure the code, which looks a bit messy for now
+- ...so many things to do!
 
 
 
-## Useful Links
-- [Implicit Procedural Planet Generation](https://static1.squarespace.com/static/58a1bc3c3e00be6bfe6c228c/t/58a4d25146c3c4233fb15cc2/1487196929690/ImplicitProceduralPlanetGeneration-Report.pdf)
-- [Curl Noise](https://petewerner.blogspot.com/2015/02/intro-to-curl-noise.html)
-- [GPU Gems Chapter on Perlin Noise](http://developer.download.nvidia.com/books/HTML/gpugems/gpugems_ch05.html)
-- [Worley Noise Implementations](https://thebookofshaders.com/12/)
-
-
-## Submission
-Commit and push to Github, then submit a link to your commit on Canvas. Remember
-to make your own README!
-
-## Extra Credit (20 points maximum)
-- __(5 - 20 pts)__ Modify the flat shader to create a procedural background for
-your scene. Add clouds, a sun (or suns!), stars, a moon, sentient nebulae,
-whatever tickles your fancy! The more interesting your sky, the more points
-you'll earn!
-- __(5 - 10 pts)__ Use a 4D noise function to modify the terrain over time, where time is the
-fourth dimension that is updated each frame. A 3D function will work, too, but
-the change in noise will look more "directional" than if you use 4D.
-- __(10 - 20 pts)__ Create your own mesh objects and procedurally place them
-in your environment according to terrain type, e.g. trees, buildings, animals.
-- __(10 - 20 pts)__ Cast a ray from your mouse and perform an action to modify the terrain (height or color), making your environment paintable.
-- __(? pts)__ Propose an extra feature of your own!

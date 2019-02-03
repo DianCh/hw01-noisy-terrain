@@ -13,6 +13,16 @@ import ShaderProgram, {Shader} from './rendering/gl/ShaderProgram';
 const controls = {
   tesselations: 5,
   'Load Scene': loadScene, // A function pointer, essentially
+  Octave: 6,
+  frequency: 0.1,
+  lacunarity: 2.0,
+  amplitude: 0.2,
+  gain: 0.5,
+  layer: 1,
+  terrain: 'mountain1',
+  cell_size: 15,
+  exponent: 2.0,
+  multiply: 20.0,
 };
 
 let square: Square;
@@ -22,8 +32,9 @@ let aPressed: boolean;
 let sPressed: boolean;
 let dPressed: boolean;
 let planePos: vec2;
+let shader: ShaderProgram = null;
 
-function loadScene() {
+function loadScene(activeProg: ShaderProgram) {
   square = new Square(vec3.fromValues(0, 0, 0));
   square.create();
   plane = new Plane(vec3.fromValues(0,0,0), vec2.fromValues(100,100), 20);
@@ -34,6 +45,8 @@ function loadScene() {
   sPressed = false;
   dPressed = false;
   planePos = vec2.fromValues(0,0);
+
+  shader = activeProg;
 }
 
 function main() {
@@ -82,6 +95,17 @@ function main() {
 
   // Add controls to the gui
   const gui = new DAT.GUI();
+  gui.add(controls, 'Load Scene');
+  gui.add(controls, 'Octave', 1, 10).step(1);
+  gui.add(controls, 'frequency', 0.001, 0.8);        // in log space
+  gui.add(controls, 'lacunarity', 1.0, 4.0);
+  gui.add(controls, 'amplitude', 0.1, 0.8);
+  gui.add(controls, 'gain', 0.1, 0.8);
+  gui.add(controls, 'exponent', 0.2, 10.0);
+  gui.add(controls, 'multiply', 1.0, 25.0);
+  gui.add(controls, 'cell_size', 5, 30).step(1);
+  gui.add(controls, 'layer', [0, 1, 2, 3, 4]);
+  gui.add(controls, 'terrain', ['mountain1', 'mountain2', 'mountain3']);
 
   // get canvas and webgl context
   const canvas = <HTMLCanvasElement> document.getElementById('canvas');
@@ -93,17 +117,24 @@ function main() {
   // Later, we can import `gl` from `globals.ts` to access it
   setGL(gl);
 
-  // Initial call to load scene
-  loadScene();
-
   const camera = new Camera(vec3.fromValues(0, 10, -20), vec3.fromValues(0, 0, 0));
 
   const renderer = new OpenGLRenderer(canvas);
   renderer.setClearColor(164.0 / 255.0, 233.0 / 255.0, 1.0, 1);
   gl.enable(gl.DEPTH_TEST);
 
-  const lambert = new ShaderProgram([
-    new Shader(gl.VERTEX_SHADER, require('./shaders/terrain-vert.glsl')),
+  const lambert1 = new ShaderProgram([
+    new Shader(gl.VERTEX_SHADER, require('./shaders/terrain1-vert.glsl')),
+    new Shader(gl.FRAGMENT_SHADER, require('./shaders/terrain-frag.glsl')),
+  ]);
+
+  const lambert2 = new ShaderProgram([
+    new Shader(gl.VERTEX_SHADER, require('./shaders/terrain2-vert.glsl')),
+    new Shader(gl.FRAGMENT_SHADER, require('./shaders/terrain-frag.glsl')),
+  ]);
+
+  const lambert3 = new ShaderProgram([
+    new Shader(gl.VERTEX_SHADER, require('./shaders/terrain3-vert.glsl')),
     new Shader(gl.FRAGMENT_SHADER, require('./shaders/terrain-frag.glsl')),
   ]);
 
@@ -111,6 +142,9 @@ function main() {
     new Shader(gl.VERTEX_SHADER, require('./shaders/flat-vert.glsl')),
     new Shader(gl.FRAGMENT_SHADER, require('./shaders/flat-frag.glsl')),
   ]);
+
+  // Initial call to load scene
+  loadScene(lambert1);
 
   function processKeyPresses() {
     let velocity: vec2 = vec2.fromValues(0,0);
@@ -128,7 +162,7 @@ function main() {
     }
     let newPos: vec2 = vec2.fromValues(0,0);
     vec2.add(newPos, velocity, planePos);
-    lambert.setPlanePos(newPos);
+    shader.setPlanePos(newPos);
     planePos = newPos;
   }
 
@@ -139,10 +173,15 @@ function main() {
     gl.viewport(0, 0, window.innerWidth, window.innerHeight);
     renderer.clear();
     processKeyPresses();
-    renderer.render(camera, lambert, [
+    switch (controls.terrain) {
+      case 'mountain1': shader = lambert1; break;
+      case 'mountain2': shader = lambert2; break;
+      case 'mountain3': shader = lambert3; break;
+    }
+    renderer.render(camera, shader, controls, [
       plane,
     ]);
-    renderer.render(camera, flat, [
+    renderer.render(camera, flat, controls, [
       square,
     ]);
     stats.end();

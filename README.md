@@ -48,7 +48,7 @@ The parameters that control the nature of the terrains are readily accesible in 
 
 ## Live Demo
 
-[Live Demo](index.html)
+[Live Demo](https://dianch.github.io/hw01-noisy-terrain/)
 
 ## TODO List
 
